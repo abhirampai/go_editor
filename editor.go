@@ -8,16 +8,16 @@ package main
 import "C"
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"github.com/mattn/go-runewidth"
 )
 
 func print_message(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
-   for _, c := range msg {
-	C.tb_set_cell(C.int(col), C.int(row), C.uint32_t(c), fg, bg)
-	col += runewidth.RuneWidth(c)
-   }
+	for _, c := range msg {
+		C.tb_set_cell(C.int(col), C.int(row), C.uint32_t(c), fg, bg)
+		col += runewidth.RuneWidth(c)
+	}
 }
 
 func run_editor() {
@@ -25,15 +25,20 @@ func run_editor() {
 
 	err := C.tb_init()
 	if err != 0 {
-		fmt.Println(err);
-		os.Exit(1);
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	print_message(25, 11, C.TB_DEFAULT, C.TB_DEFAULT, "Go-Editor - A bare bone text editor")
-	C.tb_present()
-	C.tb_poll_event(&event)
-	C.tb_shutdown()
-}
 
+	for {
+		print_message(25, 11, C.TB_DEFAULT, C.TB_DEFAULT, "Go-Editor - A bare bone text editor")
+		C.tb_present()
+		C.tb_poll_event(&event)
+		if event._type == C.TB_EVENT_KEY && event.key == C.TB_KEY_ESC {
+			C.tb_shutdown()
+			break
+		}
+	}
+}
 
 func main() {
 	run_editor()
