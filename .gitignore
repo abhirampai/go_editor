@@ -1,0 +1,4 @@
+build.sh
+go.sum
+termbox2
+go_editor
