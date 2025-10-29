@@ -9,6 +9,10 @@ A lightweight terminal-based text editor written in Go using termbox2 for termin
 - Configurable tab size
 - Support for displaying special characters and tabs
 - Terminal resize handling
+- Status bar: shows editor mode (INSERT / VISUAL), file status (filename + line count + saved/modified), copy/undo indicators, cursor position (Ln/Col), and current tab size.
+- Mode display: the editor now shows whether it's in INSERT or VISUAL mode in the status bar.
+- Copy/Undo indicators: the status bar will show when there's content in the copy buffer or undo buffer.
+- Open file by argument: you can pass a filename as the first CLI argument to open that file on startup; otherwise an untitled buffer is created.
 
 ## Prerequisites
 
