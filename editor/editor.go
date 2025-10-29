@@ -14,6 +14,8 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+var editSettings, err = LoadSettings()
+
 var ROWS, COLS int
 var offsetX, offsetY int
 
@@ -37,9 +39,9 @@ func displayText() {
 		for col = 0; col < COLS; col++ {
 			if textBufferRow < len(textBuffer) && textBufferCol < len(textBuffer[textBufferRow]) {
 				if textBuffer[textBufferRow][textBufferCol] == '\t' {
-					for i := 0; i < 4; i++ {
+					for i := 0; i < editSettings.TabSize; i++ {
 						printCell(col, row, C.TB_DEFAULT, C.TB_RED, ".")
-						if i < 3 {
+						if i < editSettings.TabSize-1 {
 							col++
 						}
 					}
