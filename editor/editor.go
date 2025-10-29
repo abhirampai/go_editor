@@ -22,8 +22,8 @@ var editSettings, err = LoadSettings()
 var mode int
 var sourceFile string
 var ROWS, COLS int
-var offsetX, offsetY int
-var currentX, currentY int
+var offsetColumn, offsetRow int
+var currentColumn, currentRow int
 var textBuffer = [][]rune{}
 var undoBuffer = [][]rune{}
 var copyBuffer = []rune{}
@@ -63,11 +63,25 @@ func readFile(filename string) {
 	}
 }
 
+func scrollText() {
+	if currentRow < offsetRow {
+		offsetRow = currentRow
+	} else if currentRow >= offsetRow+ROWS {
+		offsetRow = currentRow - ROWS + 1
+	}
+
+	if currentColumn < offsetColumn {
+		offsetColumn = currentColumn
+	} else if currentColumn >= offsetColumn+COLS {
+		offsetColumn = currentColumn - COLS + 1
+	}
+}
+
 func displayText() {
 	var row, col int
 	for row = 0; row < ROWS; row++ {
-		textBufferRow := row + offsetY
-		textBufferCol := offsetX
+		textBufferRow := row + offsetRow
+		textBufferCol := offsetColumn
 		for col = 0; col < COLS; col++ {
 			if textBufferRow < len(textBuffer) && textBufferCol < len(textBuffer[textBufferRow]) {
 				if textBuffer[textBufferRow][textBufferCol] == '\t' {
@@ -82,7 +96,7 @@ func displayText() {
 					printCell(col, row, C.TB_DEFAULT, C.TB_GREEN, string(textBuffer[textBufferRow][textBufferCol]))
 					textBufferCol++
 				}
-			} else if row+offsetY > len(textBuffer) {
+			} else if row+offsetRow > len(textBuffer) {
 				printCell(0, row, C.TB_BLUE, C.TB_DEFAULT, "*")
 				textBufferCol++
 			}
@@ -193,11 +207,84 @@ func getCopyUndoText() (string, bool) {
 }
 
 func getCursorStatusText() string {
-	return fmt.Sprintf("Ln %d, Col %d", currentY+1, currentX+1)
+	return fmt.Sprintf("Ln %d, Col %d", currentRow+1, currentColumn+1)
 }
 
 func getTabSizeText() string {
 	return fmt.Sprintf("Tab Size: %d", editSettings.TabSize)
+}
+
+func hasTabInRow(row int) bool {
+	if row >= len(textBuffer) {
+		return false
+	}
+	for _, ch := range textBuffer[row] {
+		if ch == '\t' {
+			return true
+		}
+	}
+	return false
+}
+
+func textBufferRowLength(row int) int {
+	if row >= len(textBuffer) {
+		return 0
+	}
+
+	if hasTabInRow(row) {
+		return len(textBuffer[row]) + (editSettings.TabSize-1)*strings.Count(string(textBuffer[row]), "\t")
+	}
+
+	return len(textBuffer[row])
+}
+
+func processKeypress(keyEvent C.struct_tb_event) {
+	if keyEvent.key == C.TB_KEY_ESC {
+		C.tb_shutdown()
+		os.Exit(0)
+	} else if keyEvent.ch != 0 {
+		// Insert character at current position
+	} else {
+		switch keyEvent.key {
+		case C.TB_KEY_HOME:
+			currentColumn = 0
+		case C.TB_KEY_END:
+			currentColumn = textBufferRowLength(currentRow)
+		case C.TB_KEY_PGUP:
+			if currentRow-int(ROWS/4) > 0 {
+				currentRow -= int(ROWS / 4)
+			}
+		case C.TB_KEY_PGDN:
+			if currentRow+int(ROWS/4) < len(textBuffer)-1 {
+				currentRow += int(ROWS / 4)
+			}
+		case C.TB_KEY_ARROW_UP:
+			if currentRow > 0 {
+				currentRow--
+			}
+		case C.TB_KEY_ARROW_DOWN:
+			if currentRow < len(textBuffer)-1 {
+				currentRow++
+			}
+		case C.TB_KEY_ARROW_LEFT:
+			if currentColumn > 0 {
+				currentColumn--
+			} else if currentRow > 0 {
+				currentRow--
+				currentColumn = textBufferRowLength(currentRow)
+			}
+		case C.TB_KEY_ARROW_RIGHT:
+			if currentColumn < textBufferRowLength(currentRow) {
+				currentColumn++
+			} else if currentRow < len(textBuffer)-1 {
+				currentRow++
+				currentColumn = 0
+			}
+		}
+		if currentColumn > textBufferRowLength(currentRow) {
+			currentColumn = textBufferRowLength(currentRow)
+		}
+	}
 }
 
 func RunEditor() {
@@ -216,6 +303,8 @@ func RunEditor() {
 		textBuffer = append(textBuffer, []rune{})
 	}
 
+	currentRow = 0
+
 	for {
 		COLS = int(C.tb_width())
 		ROWS = int(C.tb_height())
@@ -224,13 +313,14 @@ func RunEditor() {
 			COLS = 78
 		}
 		C.tb_clear()
+		scrollText()
 		displayText()
 		displayStatusBar()
+		C.tb_set_cursor(C.int(currentColumn-offsetColumn), C.int(currentRow-offsetRow))
 		C.tb_present()
 		C.tb_poll_event(&event)
-		if event._type == C.TB_EVENT_KEY && event.key == C.TB_KEY_ESC {
-			C.tb_shutdown()
-			break
+		if event._type == C.TB_EVENT_KEY {
+			processKeypress(event)
 		}
 	}
 }
