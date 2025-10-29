@@ -11,17 +11,23 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/mattn/go-runewidth"
 )
 
 var editSettings, err = LoadSettings()
 
+var mode int
 var sourceFile string
 var ROWS, COLS int
 var offsetX, offsetY int
-
+var currentX, currentY int
 var textBuffer = [][]rune{}
+var undoBuffer = [][]rune{}
+var copyBuffer = []rune{}
+var modified bool
 
 func printCell(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
 	for _, character := range msg {
@@ -85,6 +91,115 @@ func displayText() {
 	}
 }
 
+type statusComponent struct {
+	text      string
+	fg        C.uintattr_t
+	bg        C.uintattr_t
+	separator bool
+}
+
+func displayStatusBar() {
+	const separatorWidth = 2
+
+	copyUndoText, hasCopyUndo := getCopyUndoText()
+
+	leftComponents := []statusComponent{
+		{text: getModeModeText(), fg: C.TB_BLACK, bg: C.TB_GREEN, separator: true},
+		{text: getFileStatusText(), fg: C.TB_WHITE, bg: C.TB_BLACK, separator: true},
+		{text: copyUndoText, fg: C.TB_WHITE, bg: C.TB_BLACK, separator: hasCopyUndo},
+	}
+
+	rightComponents := []statusComponent{
+		{text: getCursorStatusText(), fg: C.TB_BLACK, bg: C.TB_CYAN, separator: true},
+		{text: getTabSizeText(), fg: C.TB_BLACK, bg: C.TB_CYAN, separator: false},
+	}
+
+	leftWidth := 0
+	for _, component := range leftComponents {
+		leftWidth += len(component.text)
+		if component.separator {
+			leftWidth += separatorWidth
+		}
+	}
+
+	rightWidth := 0
+	for _, component := range rightComponents {
+		rightWidth += len(component.text)
+		if component.separator {
+			rightWidth += separatorWidth
+		}
+	}
+
+	currentCol := 0
+	for _, component := range leftComponents {
+		printCell(currentCol, ROWS, component.fg, component.bg, component.text)
+		currentCol += len(component.text)
+		if component.separator {
+			printCell(currentCol, ROWS, C.TB_WHITE, C.TB_BLACK, "  ")
+			currentCol += separatorWidth
+		}
+	}
+
+	middleSpace := COLS - leftWidth - rightWidth
+	if middleSpace > 0 {
+		spaces := strings.Repeat(" ", middleSpace)
+		printCell(currentCol, ROWS, C.TB_WHITE, C.TB_BLACK, spaces)
+		currentCol += middleSpace
+	}
+
+	for _, component := range rightComponents {
+		printCell(currentCol, ROWS, component.fg, component.bg, component.text)
+		currentCol += len(component.text)
+		if component.separator {
+			printCell(currentCol, ROWS, C.TB_BLACK, C.TB_CYAN, "  ")
+			currentCol += separatorWidth
+		}
+	}
+}
+
+func getModeModeText() string {
+	if mode > 0 {
+		return "-- INSERT --"
+	}
+	return "-- VISUAL --"
+}
+
+func getFileStatusText() string {
+	filenameLength := len(sourceFile)
+	if filenameLength > 8 {
+		filenameLength = 8
+	}
+	status := sourceFile[:filenameLength] + " - " + strconv.Itoa(len(textBuffer)) + " lines"
+	if modified {
+		status += " (modified)"
+	} else {
+		status += " (saved)"
+	}
+	return status
+}
+
+func getCopyUndoText() (string, bool) {
+	var status strings.Builder
+	hasContent := false
+	if len(copyBuffer) > 0 {
+		status.WriteString(" [Copy]")
+		hasContent = true
+	}
+	if len(undoBuffer) > 0 {
+		status.WriteString(" [Undo]")
+		hasContent = true
+	}
+	return status.String(), hasContent
+}
+
+func getCursorStatusText() string {
+	return fmt.Sprintf("Ln %d, Col %d", currentY+1, currentX+1)
+}
+
+func getTabSizeText() string {
+	return fmt.Sprintf("Tab Size: %d", editSettings.TabSize)
+}
+
 func RunEditor() {
 	event := C.struct_tb_event{}
 
@@ -110,6 +225,7 @@ func RunEditor() {
 		}
 		C.tb_clear()
 		displayText()
+		displayStatusBar()
 		C.tb_present()
 		C.tb_poll_event(&event)
 		if event._type == C.TB_EVENT_KEY && event.key == C.TB_KEY_ESC {
