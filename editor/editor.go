@@ -1,4 +1,4 @@
-package main
+package editor
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/termbox2
@@ -57,7 +57,7 @@ func displayText() {
 	}
 }
 
-func runEditor() {
+func RunEditor() {
 	event := C.struct_tb_event{}
 
 	err := C.tb_init()
@@ -82,8 +82,4 @@ func runEditor() {
 			break
 		}
 	}
-}
-
-func main() {
-	runEditor()
 }
