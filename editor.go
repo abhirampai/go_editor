@@ -18,8 +18,8 @@ var ROWS, COLS int
 var offsetX, offsetY int
 
 var textBuffer = [][]rune{
-	{'H', 'e', 'l', 'l', 'o'},
-	{'W', 'o', 'r', 'l', 'd'},
+	{'\t', 'H', 'e', 'l', 'l', 'o', '\t'},
+	{'\t', 'W', 'o', 'r', 'l', 'd', '\t'},
 }
 
 func printCell(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
@@ -33,16 +33,24 @@ func displayText() {
 	var row, col int
 	for row = 0; row < ROWS; row++ {
 		textBufferRow := row + offsetY
+		textBufferCol := offsetX
 		for col = 0; col < COLS; col++ {
-			textBufferCol := col + offsetX
 			if textBufferRow < len(textBuffer) && textBufferCol < len(textBuffer[textBufferRow]) {
 				if textBuffer[textBufferRow][textBufferCol] == '\t' {
-					printCell(col, row, C.TB_DEFAULT, C.TB_DEFAULT, " ")
+					for i := 0; i < 4; i++ {
+						printCell(col, row, C.TB_DEFAULT, C.TB_RED, ".")
+						if i < 3 {
+							col++
+						}
+					}
+					textBufferCol++
 				} else {
 					printCell(col, row, C.TB_DEFAULT, C.TB_GREEN, string(textBuffer[textBufferRow][textBufferCol]))
+					textBufferCol++
 				}
 			} else if row+offsetY > len(textBuffer) {
 				printCell(0, row, C.TB_BLUE, C.TB_DEFAULT, "*")
+				textBufferCol++
 			}
 		}
 		printCell(col, row, C.TB_DEFAULT, C.TB_DEFAULT, "\n")
