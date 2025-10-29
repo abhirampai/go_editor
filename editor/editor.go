@@ -8,6 +8,7 @@ package editor
 import "C"
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -16,18 +17,43 @@ import (
 
 var editSettings, err = LoadSettings()
 
+var sourceFile string
 var ROWS, COLS int
 var offsetX, offsetY int
 
-var textBuffer = [][]rune{
-	{'\t', 'H', 'e', 'l', 'l', 'o', '\t'},
-	{'\t', 'W', 'o', 'r', 'l', 'd', '\t'},
-}
+var textBuffer = [][]rune{}
 
 func printCell(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
 	for _, character := range msg {
 		C.tb_set_cell(C.int(col), C.int(row), C.uint32_t(character), fg, bg)
 		col += runewidth.RuneWidth(character)
+	}
+}
+
+func readFile(filename string) {
+	file, err := os.Open(filename)
+
+	if err != nil {
+		sourceFile = filename
+		textBuffer = append(textBuffer, []rune{})
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNumber := 0
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		textBuffer = append(textBuffer, []rune{})
+
+		for i := 0; i < len(line); i++ {
+			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
+		}
+		lineNumber++
+	}
+	if lineNumber == 0 {
+		textBuffer = append(textBuffer, []rune{})
 	}
 }
 
@@ -66,6 +92,13 @@ func RunEditor() {
 	if err != 0 {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+	if len(os.Args) > 1 {
+		sourceFile = os.Args[1]
+		readFile(sourceFile)
+	} else {
+		sourceFile = "untitled"
+		textBuffer = append(textBuffer, []rune{})
 	}
 
 	for {
