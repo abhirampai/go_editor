@@ -63,6 +63,23 @@ func readFile(filename string) {
 	}
 }
 
+func insertCharacters(keyEvent C.struct_tb_event) {
+	insertCharacter := make([]rune, len(textBuffer[currentRow])+1)
+	copy(insertCharacter[:currentColumn], textBuffer[currentRow][:currentColumn])
+	switch keyEvent.key {
+	case C.TB_KEY_SPACE:
+		insertCharacter[currentColumn] = rune(' ')
+	case C.TB_KEY_TAB:
+		insertCharacter[currentColumn] = rune(' ')
+	default:
+		insertCharacter[currentColumn] = rune(keyEvent.ch)
+	}
+	copy(insertCharacter[currentColumn+1:], textBuffer[currentRow][currentColumn:])
+	textBuffer[currentRow] = insertCharacter
+	currentColumn++
+	modified = true
+}
+
 func scrollText() {
 	if currentRow < offsetRow {
 		offsetRow = currentRow
@@ -240,12 +257,34 @@ func textBufferRowLength(row int) int {
 
 func processKeypress(keyEvent C.struct_tb_event) {
 	if keyEvent.key == C.TB_KEY_ESC {
-		C.tb_shutdown()
-		os.Exit(0)
+		if mode > 0 {
+			mode = 0
+			return
+		}
 	} else if keyEvent.ch != 0 {
-		// Insert character at current position
+		if mode > 0 {
+			insertCharacters(keyEvent)
+		} else {
+			switch keyEvent.ch {
+			case 'q':
+				C.tb_shutdown()
+				os.Exit(0)
+			case 'i':
+				mode = 1
+			}
+		}
 	} else {
 		switch keyEvent.key {
+		case C.TB_KEY_TAB:
+			if mode > 0 {
+				for i := 0; i < editSettings.TabSize; i++ {
+					insertCharacters(keyEvent)
+				}
+			}
+		case C.TB_KEY_SPACE:
+			if mode > 0 {
+				insertCharacters(keyEvent)
+			}
 		case C.TB_KEY_HOME:
 			currentColumn = 0
 		case C.TB_KEY_END:
