@@ -80,6 +80,23 @@ func insertCharacters(keyEvent C.struct_tb_event) {
 	modified = true
 }
 
+func deleteCharacter() {
+	if currentColumn == 0 && currentRow == 0 {
+		return
+	}
+	if currentColumn > 0 {
+		textBuffer[currentRow] = append(textBuffer[currentRow][:currentColumn-1], textBuffer[currentRow][currentColumn:]...)
+		currentColumn--
+	} else {
+		previousRowLength := len(textBuffer[currentRow-1])
+		textBuffer[currentRow-1] = append(textBuffer[currentRow-1], textBuffer[currentRow]...)
+		textBuffer = append(textBuffer[:currentRow], textBuffer[currentRow+1:]...)
+		currentRow--
+		currentColumn = previousRowLength
+	}
+	modified = true
+}
+
 func scrollText() {
 	if currentRow < offsetRow {
 		offsetRow = currentRow
@@ -275,6 +292,10 @@ func processKeypress(keyEvent C.struct_tb_event) {
 		}
 	} else {
 		switch keyEvent.key {
+		case C.TB_KEY_BACKSPACE, C.TB_KEY_BACKSPACE2:
+			if mode > 0 {
+				deleteCharacter()
+			}
 		case C.TB_KEY_TAB:
 			if mode > 0 {
 				for i := 0; i < editSettings.TabSize; i++ {
