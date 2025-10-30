@@ -118,7 +118,7 @@ func displayStatusBar() {
 	copyUndoText, hasCopyUndo := getCopyUndoText()
 
 	leftComponents := []statusComponent{
-		{text: getModeModeText(), fg: C.TB_BLACK, bg: C.TB_GREEN, separator: true},
+		{text: getModeStatusText(), fg: C.TB_BLACK, bg: C.TB_GREEN, separator: true},
 		{text: getFileStatusText(), fg: C.TB_WHITE, bg: C.TB_BLACK, separator: true},
 		{text: copyUndoText, fg: C.TB_WHITE, bg: C.TB_BLACK, separator: hasCopyUndo},
 	}
@@ -171,7 +171,7 @@ func displayStatusBar() {
 	}
 }
 
-func getModeModeText() string {
+func getModeStatusText() string {
 	if mode > 0 {
 		return "-- INSERT --"
 	}
