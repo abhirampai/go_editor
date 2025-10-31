@@ -97,6 +97,17 @@ func deleteCharacter() {
 	modified = true
 }
 
+func insertNewLine() {
+	newLine := make([]rune, len(textBuffer[currentRow])-currentColumn)
+	copy(newLine, textBuffer[currentRow][currentColumn:])
+	textBuffer[currentRow] = textBuffer[currentRow][:currentColumn]
+	textBuffer = append(textBuffer[:currentRow+1], textBuffer[currentRow:]...)
+	textBuffer[currentRow+1] = newLine
+	currentRow++
+	currentColumn = 0
+	modified = true
+}
+
 func scrollText() {
 	if currentRow < offsetRow {
 		offsetRow = currentRow
@@ -292,6 +303,10 @@ func processKeypress(keyEvent C.struct_tb_event) {
 		}
 	} else {
 		switch keyEvent.key {
+		case C.TB_KEY_ENTER:
+			if mode > 0 {
+				insertNewLine()
+			}
 		case C.TB_KEY_BACKSPACE, C.TB_KEY_BACKSPACE2:
 			if mode > 0 {
 				deleteCharacter()
