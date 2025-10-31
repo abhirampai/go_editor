@@ -63,6 +63,28 @@ func readFile(filename string) {
 	}
 }
 
+func writeFile(filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	for _, line := range textBuffer {
+		for _, ch := range line {
+			_, err = writer.WriteRune(ch)
+			if err != nil {
+				fmt.Println("Error writing to file:", err)
+				return
+			}
+		}
+		writer.WriteRune('\n')
+	}
+	writer.Flush()
+	modified = false
+}
+
 func insertCharacters(keyEvent C.struct_tb_event) {
 	insertCharacter := make([]rune, len(textBuffer[currentRow])+1)
 	copy(insertCharacter[:currentColumn], textBuffer[currentRow][:currentColumn])
@@ -299,6 +321,8 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				os.Exit(0)
 			case 'i':
 				mode = 1
+			case 'w':
+				writeFile(sourceFile)
 			}
 		}
 	} else {
