@@ -29,6 +29,46 @@ var undoBuffer = [][]rune{}
 var copyBuffer = []rune{}
 var modified bool
 
+func runeIndexToDisplayCol(row int, runeIndex int) int {
+	if row >= len(textBuffer) {
+		return 0
+	}
+	col := 0
+	if runeIndex > len(textBuffer[row]) {
+		runeIndex = len(textBuffer[row])
+	}
+	for i := 0; i < runeIndex; i++ {
+		ch := textBuffer[row][i]
+		if ch == '\t' {
+			col += editSettings.TabSize
+		} else {
+			col += runewidth.RuneWidth(ch)
+		}
+	}
+	return col
+}
+
+func displayColToRuneIndex(row int, displayCol int) int {
+	if row >= len(textBuffer) {
+		return 0
+	}
+	col := 0
+	for i := 0; i < len(textBuffer[row]); i++ {
+		ch := textBuffer[row][i]
+		width := 0
+		if ch == '\t' {
+			width = editSettings.TabSize
+		} else {
+			width = runewidth.RuneWidth(ch)
+		}
+		if col+width > displayCol {
+			return i
+		}
+		col += width
+	}
+	return len(textBuffer[row])
+}
+
 func printCell(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
 	for _, character := range msg {
 		C.tb_set_cell(C.int(col), C.int(row), C.uint32_t(character), fg, bg)
@@ -92,7 +132,7 @@ func insertCharacters(keyEvent C.struct_tb_event) {
 	case C.TB_KEY_SPACE:
 		insertCharacter[currentColumn] = rune(' ')
 	case C.TB_KEY_TAB:
-		insertCharacter[currentColumn] = rune(' ')
+		insertCharacter[currentColumn] = rune('\t')
 	default:
 		insertCharacter[currentColumn] = rune(keyEvent.ch)
 	}
@@ -137,38 +177,40 @@ func scrollText() {
 		offsetRow = currentRow - ROWS + 1
 	}
 
-	if currentColumn < offsetColumn {
-		offsetColumn = currentColumn
-	} else if currentColumn >= offsetColumn+COLS {
-		offsetColumn = currentColumn - COLS + 1
+	visCol := 0
+	if currentRow < len(textBuffer) {
+		visCol = runeIndexToDisplayCol(currentRow, currentColumn)
+	}
+	if visCol < offsetColumn {
+		offsetColumn = visCol
+	} else if visCol >= offsetColumn+COLS {
+		offsetColumn = visCol - COLS + 1
 	}
 }
 
 func displayText() {
-	var row, col int
-	for row = 0; row < ROWS; row++ {
-		textBufferRow := row + offsetRow
-		textBufferCol := offsetColumn
-		for col = 0; col < COLS; col++ {
-			if textBufferRow < len(textBuffer) && textBufferCol < len(textBuffer[textBufferRow]) {
-				if textBuffer[textBufferRow][textBufferCol] == '\t' {
-					for i := 0; i < editSettings.TabSize; i++ {
-						printCell(col, row, C.TB_DEFAULT, C.TB_RED, ".")
-						if i < editSettings.TabSize-1 {
-							col++
-						}
-					}
-					textBufferCol++
-				} else {
-					printCell(col, row, C.TB_DEFAULT, C.TB_GREEN, string(textBuffer[textBufferRow][textBufferCol]))
-					textBufferCol++
+	for scrRow := 0; scrRow < ROWS; scrRow++ {
+		textRow := scrRow + offsetRow
+		if textRow >= len(textBuffer) {
+			printCell(0, scrRow, C.TB_BLUE, C.TB_DEFAULT, "*")
+			continue
+		}
+
+		startRune := displayColToRuneIndex(textRow, offsetColumn)
+		visCol := runeIndexToDisplayCol(textRow, startRune)
+
+		for runeIdx := startRune; runeIdx < len(textBuffer[textRow]) && visCol-offsetColumn < COLS; runeIdx++ {
+			ch := textBuffer[textRow][runeIdx]
+			if ch == '\t' {
+				for i := 0; i < editSettings.TabSize && visCol-offsetColumn < COLS; i++ {
+					printCell(visCol-offsetColumn, scrRow, C.TB_DEFAULT, C.TB_RED, ".")
+					visCol++
 				}
-			} else if row+offsetRow > len(textBuffer) {
-				printCell(0, row, C.TB_BLUE, C.TB_DEFAULT, "*")
-				textBufferCol++
+			} else {
+				printCell(visCol-offsetColumn, scrRow, C.TB_DEFAULT, C.TB_GREEN, string(ch))
+				visCol += runewidth.RuneWidth(ch)
 			}
 		}
-		printCell(col, row, C.TB_DEFAULT, C.TB_DEFAULT, "\n")
 	}
 }
 
@@ -274,35 +316,15 @@ func getCopyUndoText() (string, bool) {
 }
 
 func getCursorStatusText() string {
-	return fmt.Sprintf("Ln %d, Col %d", currentRow+1, currentColumn+1)
+	visCol := 0
+	if currentRow < len(textBuffer) {
+		visCol = runeIndexToDisplayCol(currentRow, currentColumn)
+	}
+	return fmt.Sprintf("Ln %d, Col %d", currentRow+1, visCol+1)
 }
 
 func getTabSizeText() string {
 	return fmt.Sprintf("Tab Size: %d", editSettings.TabSize)
-}
-
-func hasTabInRow(row int) bool {
-	if row >= len(textBuffer) {
-		return false
-	}
-	for _, ch := range textBuffer[row] {
-		if ch == '\t' {
-			return true
-		}
-	}
-	return false
-}
-
-func textBufferRowLength(row int) int {
-	if row >= len(textBuffer) {
-		return 0
-	}
-
-	if hasTabInRow(row) {
-		return len(textBuffer[row]) + (editSettings.TabSize-1)*strings.Count(string(textBuffer[row]), "\t")
-	}
-
-	return len(textBuffer[row])
 }
 
 func processKeypress(keyEvent C.struct_tb_event) {
@@ -337,9 +359,7 @@ func processKeypress(keyEvent C.struct_tb_event) {
 			}
 		case C.TB_KEY_TAB:
 			if mode > 0 {
-				for i := 0; i < editSettings.TabSize; i++ {
-					insertCharacters(keyEvent)
-				}
+				insertCharacters(keyEvent)
 			}
 		case C.TB_KEY_SPACE:
 			if mode > 0 {
@@ -348,7 +368,11 @@ func processKeypress(keyEvent C.struct_tb_event) {
 		case C.TB_KEY_HOME:
 			currentColumn = 0
 		case C.TB_KEY_END:
-			currentColumn = textBufferRowLength(currentRow)
+			if currentRow < len(textBuffer) {
+				currentColumn = len(textBuffer[currentRow])
+			} else {
+				currentColumn = 0
+			}
 		case C.TB_KEY_PGUP:
 			if currentRow-int(ROWS/4) > 0 {
 				currentRow -= int(ROWS / 4)
@@ -370,18 +394,18 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				currentColumn--
 			} else if currentRow > 0 {
 				currentRow--
-				currentColumn = textBufferRowLength(currentRow)
+				currentColumn = len(textBuffer[currentRow])
 			}
 		case C.TB_KEY_ARROW_RIGHT:
-			if currentColumn < textBufferRowLength(currentRow) {
+			if currentRow < len(textBuffer) && currentColumn < len(textBuffer[currentRow]) {
 				currentColumn++
 			} else if currentRow < len(textBuffer)-1 {
 				currentRow++
 				currentColumn = 0
 			}
 		}
-		if currentColumn > textBufferRowLength(currentRow) {
-			currentColumn = textBufferRowLength(currentRow)
+		if currentRow < len(textBuffer) && currentColumn > len(textBuffer[currentRow]) {
+			currentColumn = len(textBuffer[currentRow])
 		}
 	}
 }
@@ -415,7 +439,11 @@ func RunEditor() {
 		scrollText()
 		displayText()
 		displayStatusBar()
-		C.tb_set_cursor(C.int(currentColumn-offsetColumn), C.int(currentRow-offsetRow))
+		visCol := 0
+		if currentRow < len(textBuffer) {
+			visCol = runeIndexToDisplayCol(currentRow, currentColumn)
+		}
+		C.tb_set_cursor(C.int(visCol-offsetColumn), C.int(currentRow-offsetRow))
 		C.tb_present()
 		C.tb_poll_event(&event)
 		if event._type == C.TB_EVENT_KEY {
