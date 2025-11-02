@@ -17,6 +17,16 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+type Mode int
+
+const (
+	ModeEditor Mode = iota
+	ModeFileTree
+	ModeHelp
+)
+
+var currentMode Mode = ModeEditor
+
 var editSettings, err = LoadSettings()
 
 var mode int
@@ -345,6 +355,8 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				mode = 1
 			case 'w':
 				writeFile(sourceFile)
+			case 'h':
+				currentMode = ModeHelp
 			}
 		}
 	} else {
@@ -410,6 +422,69 @@ func processKeypress(keyEvent C.struct_tb_event) {
 	}
 }
 
+func drawPopupFrame(x, y, w, h int, title string) {
+	for i := 0; i < w; i++ {
+		C.tb_set_cell(C.int(x+i), C.int(y), '─', C.TB_WHITE, C.TB_BLACK)
+		C.tb_set_cell(C.int(x+i), C.int(y+h-1), '─', C.TB_WHITE, C.TB_BLACK)
+	}
+	for j := 0; j < h; j++ {
+		C.tb_set_cell(C.int(x), C.int(y+j), '│', C.TB_WHITE, C.TB_BLACK)
+		C.tb_set_cell(C.int(x+w-1), C.int(y+j), '│', C.TB_WHITE, C.TB_BLACK)
+	}
+
+	C.tb_set_cell(C.int(x), C.int(y), '┌', C.TB_WHITE, C.TB_BLACK)
+	C.tb_set_cell(C.int(x+w-1), C.int(y), '┐', C.TB_WHITE, C.TB_BLACK)
+	C.tb_set_cell(C.int(x), C.int(y+h-1), '└', C.TB_WHITE, C.TB_BLACK)
+	C.tb_set_cell(C.int(x+w-1), C.int(y+h-1), '┘', C.TB_WHITE, C.TB_BLACK)
+
+	printCell(x+2, y, C.TB_YELLOW, C.TB_BLACK, title)
+
+	for i := 1; i < w-1; i++ {
+		for j := 1; j < h-1; j++ {
+			C.tb_set_cell(C.int(x+i), C.int(y+j), ' ', C.TB_DEFAULT, C.TB_BLACK)
+		}
+	}
+}
+
+func showHelp() {
+	w := int(C.tb_width())
+	h := int(C.tb_height())
+
+	helpText := FormatKeyBindingsHelp()
+
+	maxWidth := 0
+	for _, line := range helpText {
+		if len(line) > maxWidth {
+			maxWidth = len(line)
+		}
+	}
+
+	pw := maxWidth + 4      // Add padding for borders
+	ph := len(helpText) + 4 // Add space for borders and footer
+
+	x := (w - pw) / 2
+	y := (h - ph) / 2
+
+	drawPopupFrame(x, y, pw, ph, "Help")
+
+	for i, line := range helpText {
+		printCell(x+2, y+1+i, C.TB_WHITE, C.TB_BLACK, line)
+	}
+
+	footerText := "[Enter/Esc] Close"
+	footerX := x + (pw-len(footerText))/2
+	printCell(footerX, y+ph-2, C.TB_BLUE, C.TB_BLACK, footerText)
+
+	C.tb_present()
+}
+
+func processPopover(event C.struct_tb_event) {
+	if event.key == C.TB_KEY_ENTER || event.key == C.TB_KEY_ESC {
+		currentMode = ModeEditor
+		return
+	}
+}
+
 func RunEditor() {
 	event := C.struct_tb_event{}
 
@@ -436,18 +511,33 @@ func RunEditor() {
 			COLS = 78
 		}
 		C.tb_clear()
-		scrollText()
-		displayText()
-		displayStatusBar()
-		visCol := 0
-		if currentRow < len(textBuffer) {
-			visCol = runeIndexToDisplayCol(currentRow, currentColumn)
+
+		switch currentMode {
+		case ModeEditor:
+			scrollText()
+			displayText()
+			displayStatusBar()
+			visCol := 0
+			if currentRow < len(textBuffer) {
+				visCol = runeIndexToDisplayCol(currentRow, currentColumn)
+			}
+			C.tb_set_cursor(C.int(visCol-offsetColumn), C.int(currentRow-offsetRow))
+		case ModeHelp:
+			displayText()
+			displayStatusBar()
+			showHelp()
+			C.tb_set_cursor(-1, -1)
 		}
-		C.tb_set_cursor(C.int(visCol-offsetColumn), C.int(currentRow-offsetRow))
+
 		C.tb_present()
 		C.tb_poll_event(&event)
 		if event._type == C.TB_EVENT_KEY {
-			processKeypress(event)
+			switch currentMode {
+			case ModeEditor:
+				processKeypress(event)
+			case ModeHelp:
+				processPopover(event)
+			}
 		}
 	}
 }
