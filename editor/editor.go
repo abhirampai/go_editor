@@ -21,7 +21,6 @@ type Mode int
 
 const (
 	ModeEditor Mode = iota
-	ModeFileTree
 	ModeHelp
 )
 
