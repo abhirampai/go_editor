@@ -1,18 +1,37 @@
 # Go-Editor
 
-A lightweight terminal-based text editor written in Go using termbox2 for terminal manipulation.
+A lightweight terminal-based text editor written in Go using termbox2 for terminal manipulation. Inspired by Vim's modal editing, it provides a simple yet efficient text editing experience.
 
 ## Features
 
-- Terminal-based user interface
-- Basic text display with colored syntax highlighting
-- Configurable tab size
-- Support for displaying special characters and tabs
-- Terminal resize handling
-- Status bar: shows editor mode (INSERT / VISUAL), file status (filename + line count + saved/modified), copy/undo indicators, cursor position (Ln/Col), and current tab size.
-- Mode display: the editor now shows whether it's in INSERT or VISUAL mode in the status bar.
-- Copy/Undo indicators: the status bar will show when there's content in the copy buffer or undo buffer.
-- Open file by argument: you can pass a filename as the first CLI argument to open that file on startup; otherwise an untitled buffer is created.
+### Core Features
+- Terminal-based user interface with modal editing (Visual and Insert modes)
+- Syntax highlighting with colored text display
+- Full terminal window utilization with automatic resize handling
+- Configuration system with JSON-based settings
+
+### Editor Interface
+- Comprehensive status bar showing:
+  - Current mode (VISUAL/INSERT)
+  - File information (name, line count, modified status)
+  - Copy and undo buffer indicators
+  - Cursor position (line and column)
+  - Tab size setting
+- Built-in help system (press 'h' to view)
+- Clear visual indicators for tabs and special characters
+
+### Text Manipulation
+- File editing with Visual and Insert modes
+- Full cursor movement support (arrows, Home/End, PgUp/PgDn)
+- Tab character support with configurable width
+- Basic text operations (insert, delete, newline)
+- File operations (open, save)
+
+### File Management
+- Open files from command line
+- Create new files
+- Save files with write protection
+- Modified file indicator
 
 ## Prerequisites
 
@@ -43,11 +62,53 @@ go build -o go_editor main.go
 ./go_editor
 ```
 
+## Installation and Setup
+
+### Prerequisites
+- Go installed on your system
+- GCC compiler for building termbox2
+- Make utility
+
+### Building from Source
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/abhirampai/go_editor.git
+   cd go_editor
+   ```
+
+2. **Install termbox2:**
+   ```bash
+   cd editor
+   git clone https://github.com/termbox/termbox2.git
+   cd termbox2
+   make
+   sudo make install
+   cd ../..
+   ```
+
+3. **Build the editor:**
+   ```bash
+   go build -o go_editor main.go
+   ```
+
+4. **Run the editor:**
+   ```bash
+   # Create new file
+   ./go_editor
+   
+   # Open existing file
+   ./go_editor path/to/file
+   ```
+
 ## Configuration
 
 The editor uses a configuration file located at `~/.gocodeeditor/settings.json`. If the file doesn't exist, it will be created automatically with default settings.
 
-### Default settings:
+### Configuration File Location
+- Unix/Linux/macOS: `~/.gocodeeditor/settings.json`
+
+### Default Settings
 
 ```json
 {
@@ -55,13 +116,58 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
 }
 ```
 
-### Configuration Options:
+### Available Settings
 
-- `tab_size`: Number of spaces to display for a tab character (default: 4)
+| Setting    | Description                                    | Default |
+|------------|------------------------------------------------|---------|
+| `tab_size` | Number of spaces to display for a tab character | 4       |
+
+### Modifying Settings
+1. Open the settings file: `~/.gocodeeditor/settings.json`
+2. Modify the values as needed
+3. Save the file
+4. Restart the editor for changes to take effect
 
 ## Keyboard Shortcuts
 
-- `ESC`: Exit the editor
+### Mode Control
+- `ESC`: Exit insert mode / Close popover
+- `i`: Enter insert mode (from visual mode)
+
+### File Operations
+- `w`: Save current file
+- `q`: Quit editor
+
+### Navigation (Any Mode)
+- `←` or `Left Arrow`: Move cursor left
+- `→` or `Right Arrow`: Move cursor right
+- `↑` or `Up Arrow`: Move cursor up
+- `↓` or `Down Arrow`: Move cursor down
+- `Home`: Move to start of line
+- `End`: Move to end of line
+- `PgUp`: Move up by quarter page
+- `PgDn`: Move down by quarter page
+
+### Text Manipulation (Insert Mode)
+- `Enter`: Insert new line
+- `Backspace`: Delete character
+- `Tab`: Insert tab
+
+### Help and Information
+- `h`: Show help popover with key bindings
+
+## Status Bar Information
+
+The status bar at the bottom of the editor provides important information:
+
+### Left Side
+- Editor Mode: Shows "-- VISUAL --" or "-- INSERT --"
+- File Status: Shows filename, line count, and modified/saved status
+- Buffer Indicators: Shows [Copy] and [Undo] when content is available
+
+### Right Side
+- Cursor Position: Shows current line and column numbers
+- Tab Size: Shows current tab size setting
 
 ## Contributing
 
