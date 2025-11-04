@@ -50,6 +50,8 @@ make
 sudo make install
 ```
 
+If you already have a local checkout that includes `editor/termbox2`, you can build that copy instead by running `make` inside `editor/termbox2`.
+
 ## Build
 
 ```bash
@@ -152,6 +154,13 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
 - `Enter`: Insert new line
 - `Backspace`: Delete character
 - `Tab`: Insert tab
+
+### Text Manipulation (Visual Mode)
+- `c`: Copy current line
+- `p`: Paste copied line
+- `d`: Delete current line
+- `s`: Save current buffer for undo
+- `l`: Load saved buffer (undo)
 
 ### Help and Information
 - `h`: Show help popover with key bindings
