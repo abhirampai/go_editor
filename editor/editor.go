@@ -179,6 +179,52 @@ func insertNewLine() {
 	modified = true
 }
 
+func copyLine() {
+	if currentRow < len(textBuffer) {
+		copyBuffer = make([]rune, len(textBuffer[currentRow]))
+		copy(copyBuffer, textBuffer[currentRow])
+	}
+}
+
+func pasteLine() {
+	if len(copyBuffer) == 0 {
+		currentRow++
+		currentColumn = 0
+	}
+	insertedLine := make([]rune, len(copyBuffer))
+	copy(insertedLine, copyBuffer)
+	textBuffer = append(textBuffer[:currentRow+1], textBuffer[currentRow:]...)
+	textBuffer[currentRow] = insertedLine
+	modified = true
+}
+
+func deleteLine() {
+	copyLine()
+	if currentRow < len(textBuffer) {
+		textBuffer = append(textBuffer[:currentRow], textBuffer[currentRow+1:]...)
+		if currentRow >= len(textBuffer) && currentRow > 0 {
+			currentRow--
+		}
+		currentColumn = 0
+		modified = true
+	}
+}
+
+func pushBuffer() {
+	copyUndoBuffer := make([][]rune, len(textBuffer))
+	copy(copyUndoBuffer, textBuffer)
+	undoBuffer = copyUndoBuffer
+}
+
+func pullBuffer() {
+	if len(undoBuffer) == 0 {
+		return
+	}
+
+	textBuffer = undoBuffer
+	undoBuffer = [][]rune{}
+}
+
 func scrollText() {
 	if currentRow < offsetRow {
 		offsetRow = currentRow
@@ -356,6 +402,16 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				writeFile(sourceFile)
 			case 'h':
 				currentMode = ModeHelp
+			case 'c':
+				copyLine()
+			case 'p':
+				pasteLine()
+			case 'd':
+				deleteLine()
+			case 's':
+				pushBuffer()
+			case 'l':
+				pullBuffer()
 			}
 		}
 	} else {
