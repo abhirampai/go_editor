@@ -55,6 +55,68 @@ func showFileBrowser() {
 	C.tb_present()
 }
 
+type themeEntry struct {
+	Key  string
+	Name string
+}
+
+var themeSelector = struct {
+	Entries []themeEntry
+	Cursor  int
+}{}
+
+func showThemeSelector() {
+	w := int(C.tb_width())
+	h := int(C.tb_height())
+
+	pw := 60
+	ph := 8 + len(themeSelector.Entries)
+	if ph > h-4 {
+		ph = h - 4
+	}
+
+	x := (w - pw) / 2
+	y := (h - ph) / 2
+
+	drawPopupFrame(x, y, pw, ph, "Select Theme")
+
+	for i, entry := range themeSelector.Entries {
+		displayName := entry.Name
+		if len(displayName) > pw-6 {
+			displayName = displayName[:pw-9] + "..."
+		}
+		var fg, bg C.uintattr_t = C.TB_WHITE, C.TB_BLACK
+		if i == themeSelector.Cursor {
+			fg, bg = C.TB_BLACK, C.TB_WHITE
+		}
+		printCell(x+2, y+2+i, fg, bg, displayName)
+	}
+
+	footerText := "[↑/↓] Navigate  [Enter] Select  [Esc] Close"
+	footerX := x + (pw-len(footerText))/2
+	printCell(footerX, y+ph-2, C.TB_BLUE, C.TB_BLACK, footerText)
+
+	C.tb_present()
+}
+
+func processThemeSelectorEvent(event C.struct_tb_event) {
+	switch event.key {
+	case C.TB_KEY_ESC:
+		currentMode = ModeEditor
+	case C.TB_KEY_ARROW_UP:
+		if themeSelector.Cursor > 0 {
+			themeSelector.Cursor--
+		}
+	case C.TB_KEY_ARROW_DOWN:
+		if themeSelector.Cursor < len(themeSelector.Entries)-1 {
+			themeSelector.Cursor++
+		}
+	case C.TB_KEY_ENTER:
+		entry := themeSelector.Entries[themeSelector.Cursor]
+		SetThemeAndSave(entry.Key)
+		currentMode = ModeEditor
+	}
+}
 func processFileBrowserEvent(event C.struct_tb_event) {
 	switch event.key {
 	case C.TB_KEY_ESC:

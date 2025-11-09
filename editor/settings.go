@@ -8,7 +8,8 @@ import (
 )
 
 type Settings struct {
-	TabSize int `json:"tab_size"`
+	TabSize int    `json:"tab_size"`
+	Theme   string `json:"theme"`
 }
 
 func LoadSettings() (*Settings, error) {
@@ -26,6 +27,7 @@ func LoadSettings() (*Settings, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		defaultSettings := &Settings{
 			TabSize: 4,
+			Theme:   "one-dark",
 		}
 		return defaultSettings, SaveSettings(defaultSettings)
 	}
