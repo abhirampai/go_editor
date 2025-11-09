@@ -22,9 +22,11 @@ type Mode int
 const (
 	ModeEditor Mode = iota
 	ModeHelp
+	ModeFileBrowser
 )
 
 var currentMode Mode = ModeEditor
+var fileBrowser *FileBrowser
 
 var editSettings, err = LoadSettings()
 
@@ -87,6 +89,7 @@ func printCell(col int, row int, fg C.uintattr_t, bg C.uintattr_t, msg string) {
 
 func readFile(filename string) {
 	file, err := os.Open(filename)
+	textBuffer = [][]rune{}
 
 	if err != nil {
 		sourceFile = filename
@@ -412,6 +415,13 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				pushBuffer()
 			case 'l':
 				pullBuffer()
+			case 'o':
+				if fileBrowser == nil {
+					fileBrowser = NewFileBrowser()
+				} else {
+					fileBrowser.RefreshEntries() // Refresh the list when opening
+				}
+				currentMode = ModeFileBrowser
 			}
 		}
 	} else {
@@ -558,6 +568,9 @@ func RunEditor() {
 
 	currentRow = 0
 
+	// Initialize the file browser
+	fileBrowser = NewFileBrowser()
+
 	for {
 		COLS = int(C.tb_width())
 		ROWS = int(C.tb_height())
@@ -582,6 +595,11 @@ func RunEditor() {
 			displayStatusBar()
 			showHelp()
 			C.tb_set_cursor(-1, -1)
+		case ModeFileBrowser:
+			displayText()
+			displayStatusBar()
+			showFileBrowser()
+			C.tb_set_cursor(-1, -1)
 		}
 
 		C.tb_present()
@@ -592,6 +610,8 @@ func RunEditor() {
 				processKeypress(event)
 			case ModeHelp:
 				processPopover(event)
+			case ModeFileBrowser:
+				processFileBrowserEvent(event)
 			}
 		}
 	}

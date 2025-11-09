@@ -6,6 +6,7 @@ A lightweight terminal-based text editor written in Go using termbox2 for termin
 
 ### Core Features
 - Terminal-based user interface with modal editing (Visual and Insert modes)
+- Built-in file browser for navigating and opening files
 - Syntax highlighting with colored text display
 - Full terminal window utilization with automatic resize handling
 - Configuration system with JSON-based settings
@@ -28,6 +29,7 @@ A lightweight terminal-based text editor written in Go using termbox2 for termin
 - File operations (open, save)
 
 ### File Management
+- Interactive file browser for navigating directories and opening files
 - Open files from command line
 - Create new files
 - Save files with write protection
@@ -161,6 +163,12 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
 - `d`: Delete current line
 - `s`: Save current buffer for undo
 - `l`: Load saved buffer (undo)
+
+### File Browser
+- `o`: Open file browser modal
+  - `↑/↓`: Navigate through files and directories
+  - `Enter`: Open selected file or enter directory
+  - `ESC`: Close file browser
 
 ### Help and Information
 - `h`: Show help popover with key bindings
