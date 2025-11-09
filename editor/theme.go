@@ -73,24 +73,6 @@ var SolarizedDark = Theme{
 	PopupTitleFg: ColorYellow,
 }
 
-var SolarizedLight = Theme{
-	Name:         "Solarized Light",
-	Background:   ColorDefault,
-	Foreground:   ColorBlack,
-	LineNumber:   ColorBlue,
-	StatusBarBg:  ColorWhite,
-	StatusBarFg:  ColorBlack,
-	StatusModeBg: ColorGreen,
-	StatusModeFg: ColorBlack,
-	StatusInfoBg: ColorWhite,
-	StatusInfoFg: ColorBlack,
-	SelectionBg:  ColorBlue,
-	PopupBg:      ColorWhite,
-	PopupFg:      ColorBlack,
-	PopupTitleBg: ColorWhite,
-	PopupTitleFg: ColorRed,
-}
-
 var DraculaTheme = Theme{
 	Name:         "Dracula",
 	Background:   ColorBlack,
@@ -127,17 +109,95 @@ var GruvboxDark = Theme{
 	PopupTitleFg: ColorRed,
 }
 
+var MonokaiPro = Theme{
+	Name:         "Monokai Pro",
+	Background:   ColorBlack,
+	Foreground:   ColorWhite,
+	LineNumber:   ColorMagenta,
+	StatusBarBg:  ColorBlack,
+	StatusBarFg:  ColorGreen,
+	StatusModeBg: ColorGreen,
+	StatusModeFg: ColorBlack,
+	StatusInfoBg: ColorBlack,
+	StatusInfoFg: ColorWhite,
+	SelectionBg:  ColorMagenta,
+	PopupBg:      ColorBlack,
+	PopupFg:      ColorWhite,
+	PopupTitleBg: ColorBlack,
+	PopupTitleFg: ColorGreen,
+}
+
+var NordDark = Theme{
+	Name:         "Nord Dark",
+	Background:   ColorBlack,
+	Foreground:   ColorCyan,
+	LineNumber:   ColorBlue,
+	StatusBarBg:  ColorBlue,
+	StatusBarFg:  ColorWhite,
+	StatusModeBg: ColorCyan,
+	StatusModeFg: ColorBlack,
+	StatusInfoBg: ColorBlack,
+	StatusInfoFg: ColorCyan,
+	SelectionBg:  ColorBlue,
+	PopupBg:      ColorBlack,
+	PopupFg:      ColorCyan,
+	PopupTitleBg: ColorBlue,
+	PopupTitleFg: ColorWhite,
+}
+
+var TokyoNight = Theme{
+	Name:         "Tokyo Night",
+	Background:   ColorBlack,
+	Foreground:   ColorWhite,
+	LineNumber:   ColorMagenta,
+	StatusBarBg:  ColorBlue,
+	StatusBarFg:  ColorWhite,
+	StatusModeBg: ColorMagenta,
+	StatusModeFg: ColorBlack,
+	StatusInfoBg: ColorBlack,
+	StatusInfoFg: ColorWhite,
+	SelectionBg:  ColorBlue,
+	PopupBg:      ColorBlack,
+	PopupFg:      ColorWhite,
+	PopupTitleBg: ColorBlue,
+	PopupTitleFg: ColorMagenta,
+}
+
+var MaterialDark = Theme{
+	Name:         "Material Dark",
+	Background:   ColorBlack,
+	Foreground:   ColorWhite,
+	LineNumber:   ColorBlue,
+	StatusBarBg:  ColorBlue,
+	StatusBarFg:  ColorWhite,
+	StatusModeBg: ColorCyan,
+	StatusModeFg: ColorBlack,
+	StatusInfoBg: ColorBlack,
+	StatusInfoFg: ColorWhite,
+	SelectionBg:  ColorBlue,
+	PopupBg:      ColorBlack,
+	PopupFg:      ColorWhite,
+	PopupTitleBg: ColorBlue,
+	PopupTitleFg: ColorCyan,
+}
+
 var Themes = map[string]Theme{
 	"one-dark":       OneDarkTheme,
 	"solarized-dark": SolarizedDark,
-	"solarized-light": SolarizedLight,
 	"dracula":        DraculaTheme,
 	"gruvbox":        GruvboxDark,
+	"monokai-pro":    MonokaiPro,
+	"nord-dark":      NordDark,
+	"tokyo-night":    TokyoNight,
+	"material-dark":  MaterialDark,
 }
 
 func GetThemeNames() []string {
 	names := make([]string, 0, len(Themes))
 	for k := range Themes {
+		if CurrentTheme.Name == Themes[k].Name {
+			continue
+		}
 		names = append(names, k)
 	}
 	return names

@@ -8,7 +8,7 @@ import (
 )
 
 type Settings struct {
-	TabSize int `json:"tab_size"`
+	TabSize int    `json:"tab_size"`
 	Theme   string `json:"theme"`
 }
 

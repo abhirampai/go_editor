@@ -23,6 +23,7 @@ const (
 	ModeEditor Mode = iota
 	ModeHelp
 	ModeFileBrowser
+	ModeThemeSelector
 )
 
 var currentMode Mode = ModeEditor
@@ -422,6 +423,19 @@ func processKeypress(keyEvent C.struct_tb_event) {
 					fileBrowser.RefreshEntries() // Refresh the list when opening
 				}
 				currentMode = ModeFileBrowser
+			case 't':
+				// Initialize theme selector with available themes and show it
+				themeSelector.Entries = nil // Clear existing entries
+				for key, theme := range Themes {
+					if theme.Name != CurrentTheme.Name { // Skip current theme
+						themeSelector.Entries = append(themeSelector.Entries, themeEntry{
+							Key:  key,
+							Name: theme.Name,
+						})
+					}
+				}
+				themeSelector.Cursor = 0
+				currentMode = ModeThemeSelector
 			}
 		}
 	} else {
@@ -603,6 +617,11 @@ func RunEditor() {
 			displayStatusBar()
 			showFileBrowser()
 			C.tb_set_cursor(-1, -1)
+		case ModeThemeSelector:
+			displayText()
+			displayStatusBar()
+			showThemeSelector()
+			C.tb_set_cursor(-1, -1)
 		}
 
 		C.tb_present()
@@ -615,6 +634,8 @@ func RunEditor() {
 				processPopover(event)
 			case ModeFileBrowser:
 				processFileBrowserEvent(event)
+			case ModeThemeSelector:
+				processThemeSelectorEvent(event)
 			}
 		}
 	}
