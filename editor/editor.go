@@ -261,11 +261,11 @@ func displayText() {
 			ch := textBuffer[textRow][runeIdx]
 			if ch == '\t' {
 				for i := 0; i < editSettings.TabSize && visCol-offsetColumn < COLS; i++ {
-					printCell(visCol-offsetColumn, scrRow, C.TB_DEFAULT, C.TB_RED, ".")
+					printCell(visCol-offsetColumn, scrRow, C.TB_WHITE, C.TB_DEFAULT, " ")
 					visCol++
 				}
 			} else {
-				printCell(visCol-offsetColumn, scrRow, C.TB_DEFAULT, C.TB_GREEN, string(ch))
+				printCell(visCol-offsetColumn, scrRow, C.TB_WHITE, C.TB_DEFAULT, string(ch))
 				visCol += runewidth.RuneWidth(ch)
 			}
 		}
