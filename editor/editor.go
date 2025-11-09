@@ -250,7 +250,7 @@ func displayText() {
 	for scrRow := 0; scrRow < ROWS; scrRow++ {
 		textRow := scrRow + offsetRow
 		if textRow >= len(textBuffer) {
-			printCell(0, scrRow, C.TB_BLUE, C.TB_DEFAULT, "*")
+			printCell(0, scrRow, CurrentTheme.LineNumber, CurrentTheme.Background, "*")
 			continue
 		}
 
@@ -261,11 +261,11 @@ func displayText() {
 			ch := textBuffer[textRow][runeIdx]
 			if ch == '\t' {
 				for i := 0; i < editSettings.TabSize && visCol-offsetColumn < COLS; i++ {
-					printCell(visCol-offsetColumn, scrRow, C.TB_WHITE, C.TB_DEFAULT, " ")
+					printCell(visCol-offsetColumn, scrRow, CurrentTheme.Foreground, CurrentTheme.Background, " ")
 					visCol++
 				}
 			} else {
-				printCell(visCol-offsetColumn, scrRow, C.TB_WHITE, C.TB_DEFAULT, string(ch))
+				printCell(visCol-offsetColumn, scrRow, CurrentTheme.Foreground, CurrentTheme.Background, string(ch))
 				visCol += runewidth.RuneWidth(ch)
 			}
 		}
@@ -285,14 +285,14 @@ func displayStatusBar() {
 	copyUndoText, hasCopyUndo := getCopyUndoText()
 
 	leftComponents := []statusComponent{
-		{text: getModeStatusText(), fg: C.TB_BLACK, bg: C.TB_GREEN, separator: true},
-		{text: getFileStatusText(), fg: C.TB_WHITE, bg: C.TB_BLACK, separator: true},
-		{text: copyUndoText, fg: C.TB_WHITE, bg: C.TB_BLACK, separator: hasCopyUndo},
+		{text: getModeStatusText(), fg: CurrentTheme.StatusModeFg, bg: CurrentTheme.StatusModeBg, separator: true},
+		{text: getFileStatusText(), fg: CurrentTheme.StatusBarFg, bg: CurrentTheme.StatusBarBg, separator: true},
+		{text: copyUndoText, fg: CurrentTheme.StatusBarFg, bg: CurrentTheme.StatusBarBg, separator: hasCopyUndo},
 	}
 
 	rightComponents := []statusComponent{
-		{text: getCursorStatusText(), fg: C.TB_BLACK, bg: C.TB_CYAN, separator: true},
-		{text: getTabSizeText(), fg: C.TB_BLACK, bg: C.TB_CYAN, separator: false},
+		{text: getCursorStatusText(), fg: CurrentTheme.StatusInfoFg, bg: CurrentTheme.StatusInfoBg, separator: true},
+		{text: getTabSizeText(), fg: CurrentTheme.StatusInfoFg, bg: CurrentTheme.StatusInfoBg, separator: false},
 	}
 
 	leftWidth := 0
@@ -332,7 +332,7 @@ func displayStatusBar() {
 		printCell(currentCol, ROWS, component.fg, component.bg, component.text)
 		currentCol += len(component.text)
 		if component.separator {
-			printCell(currentCol, ROWS, C.TB_BLACK, C.TB_CYAN, "  ")
+			printCell(currentCol, ROWS, C.TB_WHITE, C.TB_BLACK, "  ")
 			currentCol += separatorWidth
 		}
 	}
@@ -489,24 +489,24 @@ func processKeypress(keyEvent C.struct_tb_event) {
 
 func drawPopupFrame(x, y, w, h int, title string) {
 	for i := 0; i < w; i++ {
-		C.tb_set_cell(C.int(x+i), C.int(y), '─', C.TB_WHITE, C.TB_BLACK)
-		C.tb_set_cell(C.int(x+i), C.int(y+h-1), '─', C.TB_WHITE, C.TB_BLACK)
+		C.tb_set_cell(C.int(x+i), C.int(y), '─', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
+		C.tb_set_cell(C.int(x+i), C.int(y+h-1), '─', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
 	}
 	for j := 0; j < h; j++ {
-		C.tb_set_cell(C.int(x), C.int(y+j), '│', C.TB_WHITE, C.TB_BLACK)
-		C.tb_set_cell(C.int(x+w-1), C.int(y+j), '│', C.TB_WHITE, C.TB_BLACK)
+		C.tb_set_cell(C.int(x), C.int(y+j), '│', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
+		C.tb_set_cell(C.int(x+w-1), C.int(y+j), '│', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
 	}
 
-	C.tb_set_cell(C.int(x), C.int(y), '┌', C.TB_WHITE, C.TB_BLACK)
-	C.tb_set_cell(C.int(x+w-1), C.int(y), '┐', C.TB_WHITE, C.TB_BLACK)
-	C.tb_set_cell(C.int(x), C.int(y+h-1), '└', C.TB_WHITE, C.TB_BLACK)
-	C.tb_set_cell(C.int(x+w-1), C.int(y+h-1), '┘', C.TB_WHITE, C.TB_BLACK)
+	C.tb_set_cell(C.int(x), C.int(y), '┌', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
+	C.tb_set_cell(C.int(x+w-1), C.int(y), '┐', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
+	C.tb_set_cell(C.int(x), C.int(y+h-1), '└', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
+	C.tb_set_cell(C.int(x+w-1), C.int(y+h-1), '┘', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
 
-	printCell(x+2, y, C.TB_YELLOW, C.TB_BLACK, title)
+	printCell(x+2, y, CurrentTheme.PopupTitleFg, CurrentTheme.PopupTitleBg, title)
 
 	for i := 1; i < w-1; i++ {
 		for j := 1; j < h-1; j++ {
-			C.tb_set_cell(C.int(x+i), C.int(y+j), ' ', C.TB_DEFAULT, C.TB_BLACK)
+			C.tb_set_cell(C.int(x+i), C.int(y+j), ' ', CurrentTheme.PopupFg, CurrentTheme.PopupBg)
 		}
 	}
 }
@@ -558,6 +558,9 @@ func RunEditor() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	ApplySettingsTheme()
+
 	if len(os.Args) > 1 {
 		sourceFile = os.Args[1]
 		readFile(sourceFile)
