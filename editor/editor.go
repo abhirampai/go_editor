@@ -517,7 +517,25 @@ func processKeypress(keyEvent C.struct_tb_event) {
 						})
 					}
 				}
+				previousThemeKey = ""
+				if editSettings != nil && editSettings.Theme != "" {
+					previousThemeKey = editSettings.Theme
+				} else {
+					previousThemeKey = GetCurrentThemeKey()
+				}
+
 				themeSelector.Cursor = 0
+				for i, e := range themeSelector.Entries {
+					if e.Key == previousThemeKey {
+						themeSelector.Cursor = i
+						break
+					}
+				}
+
+				if len(themeSelector.Entries) > 0 {
+					SetTheme(themeSelector.Entries[themeSelector.Cursor].Key)
+				}
+
 				currentMode = ModeThemeSelector
 			}
 		}

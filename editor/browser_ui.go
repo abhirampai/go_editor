@@ -65,6 +65,8 @@ var themeSelector = struct {
 	Cursor  int
 }{}
 
+var previousThemeKey string
+
 func showThemeSelector() {
 	w := int(C.tb_width())
 	h := int(C.tb_height())
@@ -77,6 +79,25 @@ func showThemeSelector() {
 
 	x := (w - pw) / 2
 	y := (h - ph) / 2
+	if previousThemeKey == "" {
+		if editSettings != nil && editSettings.Theme != "" {
+			previousThemeKey = editSettings.Theme
+		} else {
+			previousThemeKey = GetCurrentThemeKey()
+		}
+
+		for i, e := range themeSelector.Entries {
+			if e.Key == previousThemeKey {
+				themeSelector.Cursor = i
+				SetTheme(e.Key)
+				break
+			}
+		}
+
+		if len(themeSelector.Entries) > 0 {
+			SetTheme(themeSelector.Entries[themeSelector.Cursor].Key)
+		}
+	}
 
 	drawPopupFrame(x, y, pw, ph, "Select Theme")
 
@@ -102,18 +123,25 @@ func showThemeSelector() {
 func processThemeSelectorEvent(event C.struct_tb_event) {
 	switch event.key {
 	case C.TB_KEY_ESC:
+		if previousThemeKey != "" {
+			SetTheme(previousThemeKey)
+		}
+		previousThemeKey = ""
 		currentMode = ModeEditor
 	case C.TB_KEY_ARROW_UP:
 		if themeSelector.Cursor > 0 {
 			themeSelector.Cursor--
+			SetTheme(themeSelector.Entries[themeSelector.Cursor].Key)
 		}
 	case C.TB_KEY_ARROW_DOWN:
 		if themeSelector.Cursor < len(themeSelector.Entries)-1 {
 			themeSelector.Cursor++
+			SetTheme(themeSelector.Entries[themeSelector.Cursor].Key)
 		}
 	case C.TB_KEY_ENTER:
 		entry := themeSelector.Entries[themeSelector.Cursor]
 		SetThemeAndSave(entry.Key)
+		previousThemeKey = ""
 		currentMode = ModeEditor
 	}
 }

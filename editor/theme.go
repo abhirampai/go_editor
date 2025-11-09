@@ -237,3 +237,12 @@ func SetThemeAndSave(name string) bool {
 	_ = SaveSettings(editSettings)
 	return true
 }
+
+func GetCurrentThemeKey() string {
+	for k, t := range Themes {
+		if t.Name == CurrentTheme.Name {
+			return k
+		}
+	}
+	return ""
+}
