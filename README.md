@@ -186,6 +186,37 @@ The status bar at the bottom of the editor provides important information:
 - Cursor Position: Shows current line and column numbers
 - Tab Size: Shows current tab size setting
 
+## Theme Selector
+
+The editor includes a built-in Theme Selector that lets you change the editor's color theme at runtime.
+
+How to open
+- Press `t` in the editor to open the theme selector popover.
+
+Navigation and controls
+- Use `↑` / `↓` to move the selection.
+- Press `Enter` to apply the selected theme and save the choice to your settings.
+- Press `Esc` to close the selector without changing the theme.
+
+Behavior and persistence
+- Themes are applied immediately when you press `Enter` (no restart required).
+- The selected theme is saved to the editor settings (`~/.gocodeeditor/settings.json`) so it will be applied automatically on the next startup via the editor's settings loader.
+
+Available themes
+- The built-in themes are defined in `editor/theme.go`. The current set (key => display name) includes:
+   - `one-dark` => One Dark
+   - `solarized-dark` => Solarized Dark
+   - `dracula` => Dracula
+   - `gruvbox` => Gruvbox Dark
+   - `monokai-pro` => Monokai Pro
+   - `nord-dark` => Nord Dark
+   - `tokyo-night` => Tokyo Night
+   - `material-dark` => Material Dark
+
+Developer notes
+- The selector UI and input handling are implemented in `editor/browser_ui.go` (`showThemeSelector` and `processThemeSelectorEvent`).
+- Theme application and persistence are in `editor/theme.go` (`SetTheme`, `SetThemeAndSave`, `ApplySettingsTheme`).
+
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements and bug fixes.
