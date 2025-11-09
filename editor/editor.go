@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -293,6 +294,7 @@ func displayStatusBar() {
 
 	rightComponents := []statusComponent{
 		{text: getCursorStatusText(), fg: CurrentTheme.StatusInfoFg, bg: CurrentTheme.StatusInfoBg, separator: true},
+		{text: getLanguageStatusText(), fg: CurrentTheme.StatusInfoFg, bg: CurrentTheme.StatusInfoBg, separator: true},
 		{text: getTabSizeText(), fg: CurrentTheme.StatusInfoFg, bg: CurrentTheme.StatusInfoBg, separator: false},
 	}
 
@@ -358,6 +360,87 @@ func getFileStatusText() string {
 		status += " (saved)"
 	}
 	return status
+}
+
+func getLanguageStatusText() string {
+	if sourceFile == "" || sourceFile == "untitled" {
+		return "Plain"
+	}
+
+	ext := strings.ToLower(filepath.Ext(sourceFile))
+	if ext != "" {
+		switch ext {
+		case ".go":
+			return "Go"
+		case ".py":
+			return "Python"
+		case ".js":
+			return "JavaScript"
+		case ".ts":
+			return "TypeScript"
+		case ".rs":
+			return "Rust"
+		case ".c":
+			return "C"
+		case ".cpp", ".cc", ".cxx":
+			return "C++"
+		case ".h", ".hpp":
+			return "C/C++"
+		case ".java":
+			return "Java"
+		case ".rb":
+			return "Ruby"
+		case ".php":
+			return "PHP"
+		case ".sh", ".bash", ".zsh":
+			return "Shell"
+		case ".nim":
+			return "Nim"
+		case ".zig":
+			return "Zig"
+		case ".d":
+			return "D"
+		case ".html", ".htm":
+			return "HTML"
+		case ".css":
+			return "CSS"
+		case ".json":
+			return "JSON"
+		case ".xml":
+			return "XML"
+		case ".md":
+			return "Markdown"
+		case ".txt":
+			return "Text"
+		}
+	}
+
+	file, err := os.Open(sourceFile)
+	if err == nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		if scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "#!") {
+				if strings.Contains(line, "python") {
+					return "Python"
+				} else if strings.Contains(line, "bash") || strings.Contains(line, "sh") || strings.Contains(line, "zsh") {
+					return "Shell"
+				} else if strings.Contains(line, "node") || strings.Contains(line, "nodejs") {
+					return "JavaScript"
+				} else if strings.Contains(line, "php") {
+					return "PHP"
+				} else if strings.Contains(line, "ruby") {
+					return "Ruby"
+				}
+			}
+		}
+	}
+
+	if ext != "" {
+		return strings.TrimPrefix(ext, ".")
+	}
+	return "Plain"
 }
 
 func getCopyUndoText() (string, bool) {
