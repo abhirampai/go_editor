@@ -249,26 +249,87 @@ func scrollText() {
 }
 
 func displayText() {
+	lang := getLanguageStatusText()
+	inMultiLineComment := false
+
 	for scrRow := 0; scrRow < ROWS; scrRow++ {
 		textRow := scrRow + offsetRow
 		if textRow >= len(textBuffer) {
-			printCell(0, scrRow, CurrentTheme.LineNumber, CurrentTheme.Background, "*")
 			continue
 		}
 
 		startRune := displayColToRuneIndex(textRow, offsetColumn)
 		visCol := runeIndexToDisplayCol(textRow, startRune)
 
-		for runeIdx := startRune; runeIdx < len(textBuffer[textRow]) && visCol-offsetColumn < COLS; runeIdx++ {
-			ch := textBuffer[textRow][runeIdx]
-			if ch == '\t' {
-				for i := 0; i < editSettings.TabSize && visCol-offsetColumn < COLS; i++ {
-					printCell(visCol-offsetColumn, scrRow, CurrentTheme.Foreground, CurrentTheme.Background, " ")
+		line := textBuffer[textRow]
+		tokens, stillInComment := tokenizeLine(line, lang, inMultiLineComment)
+		inMultiLineComment = stillInComment
+
+		for _, token := range tokens {
+			tokenColor := CurrentTheme.Foreground
+			switch token.Type {
+			case TokenKeyword:
+				tokenColor = CurrentTheme.KeywordColor
+			case TokenString:
+				tokenColor = CurrentTheme.StringColor
+			case TokenNumber:
+				tokenColor = CurrentTheme.NumberColor
+			case TokenComment:
+				tokenColor = CurrentTheme.CommentColor
+			case TokenFunction:
+				tokenColor = CurrentTheme.FunctionColor
+			case TokenType_:
+				tokenColor = CurrentTheme.TypeColor
+			}
+
+			if token.End <= startRune {
+				continue
+			}
+
+			startInToken := 0
+			if startRune > token.Start {
+				startInToken = startRune - token.Start
+			}
+
+			switch token.Type {
+			case TokenSpace:
+				if visCol-offsetColumn >= COLS {
+					break
+				}
+				col := visCol - offsetColumn
+				if col >= 0 && col < COLS {
+					printCell(col, scrRow, CurrentTheme.WhitespaceColor, CurrentTheme.Background, " ")
+				}
+				visCol++
+			case TokenTab:
+				if visCol-offsetColumn >= COLS {
+					break
+				}
+				col := visCol - offsetColumn
+				if col >= 0 && col < COLS {
+					printCell(col, scrRow, CurrentTheme.WhitespaceColor, CurrentTheme.Background, "→")
+				}
+				visCol++
+				remaining := editSettings.TabSize - 1
+				for j := 0; j < remaining && visCol-offsetColumn < COLS; j++ {
+					c := visCol - offsetColumn
+					if c >= 0 && c < COLS {
+						printCell(c, scrRow, CurrentTheme.WhitespaceColor, CurrentTheme.Background, "·")
+					}
 					visCol++
 				}
-			} else {
-				printCell(visCol-offsetColumn, scrRow, CurrentTheme.Foreground, CurrentTheme.Background, string(ch))
-				visCol += runewidth.RuneWidth(ch)
+			default:
+				for j := startInToken; j < len(token.Value); j++ {
+					if visCol-offsetColumn >= COLS {
+						break
+					}
+					col := visCol - offsetColumn
+					if col >= 0 && col < COLS {
+						r := token.Value[j]
+						printCell(col, scrRow, tokenColor, CurrentTheme.Background, string(r))
+					}
+					visCol += runewidth.RuneWidth(token.Value[j])
+				}
 			}
 		}
 	}
@@ -503,14 +564,13 @@ func processKeypress(keyEvent C.struct_tb_event) {
 				if fileBrowser == nil {
 					fileBrowser = NewFileBrowser()
 				} else {
-					fileBrowser.RefreshEntries() // Refresh the list when opening
+					fileBrowser.RefreshEntries()
 				}
 				currentMode = ModeFileBrowser
 			case 't':
-				// Initialize theme selector with available themes and show it
-				themeSelector.Entries = nil // Clear existing entries
+				themeSelector.Entries = nil
 				for key, theme := range Themes {
-					if theme.Name != CurrentTheme.Name { // Skip current theme
+					if theme.Name != CurrentTheme.Name {
 						themeSelector.Entries = append(themeSelector.Entries, themeEntry{
 							Key:  key,
 							Name: theme.Name,
@@ -639,8 +699,8 @@ func showHelp() {
 		}
 	}
 
-	pw := maxWidth + 4      // Add padding for borders
-	ph := len(helpText) + 4 // Add space for borders and footer
+	pw := maxWidth + 4
+	ph := len(helpText) + 4
 
 	x := (w - pw) / 2
 	y := (h - ph) / 2
@@ -686,7 +746,6 @@ func RunEditor() {
 
 	currentRow = 0
 
-	// Initialize the file browser
 	fileBrowser = NewFileBrowser()
 
 	for {
