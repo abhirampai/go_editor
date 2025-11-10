@@ -19,6 +19,7 @@ func GetKeyBindings() []KeyBinding {
 		{Key: "s", Mode: "Visual", Description: "Save current buffer for undo"},
 		{Key: "l", Mode: "Visual", Description: "Load saved buffer (undo)"},
 		{Key: "o", Mode: "Visual", Description: "Open file browser"},
+		{Key: "t", Mode: "Visual", Description: "Toggle theme"},
 		{Key: "Left", Mode: "Any", Description: "Move cursor left"},
 		{Key: "Right", Mode: "Any", Description: "Move cursor right"},
 		{Key: "Up", Mode: "Any", Description: "Move cursor up"},
