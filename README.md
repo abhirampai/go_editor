@@ -118,7 +118,8 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
 
 ```json
 {
-  "tab_size": 4
+  "tab_size": 4,
+  "theme": "one-dark"
 }
 ```
 
