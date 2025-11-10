@@ -7,7 +7,8 @@ A lightweight terminal-based text editor written in Go using termbox2 for termin
 ### Core Features
 - Terminal-based user interface with modal editing (Visual and Insert modes)
 - Built-in file browser for navigating and opening files
-- Syntax highlighting with colored text display
+- Advanced syntax highlighting with support for 8 programming languages
+- Language detection for 18+ programming languages
 - Full terminal window utilization with automatic resize handling
 - Configuration system with JSON-based settings
 
@@ -20,6 +21,7 @@ A lightweight terminal-based text editor written in Go using termbox2 for termin
   - Tab size setting
 - Built-in help system (press 'h' to view)
 - Clear visual indicators for tabs and special characters
+- Language detection and syntax highlighting status in status bar
 
 ### Text Manipulation
 - File editing with Visual and Insert modes
@@ -125,6 +127,7 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
 | Setting    | Description                                    | Default |
 |------------|------------------------------------------------|---------|
 | `tab_size` | Number of spaces to display for a tab character | 4       |
+| `theme`    | Color theme for the editor interface           | "one-dark" |
 
 ### Modifying Settings
 1. Open the settings file: `~/.gocodeeditor/settings.json`
@@ -171,7 +174,69 @@ The editor uses a configuration file located at `~/.gocodeeditor/settings.json`.
   - `ESC`: Close file browser
 
 ### Help and Information
-- `h`: Show help popover with key bindings
+- `h`: Show comprehensive help popover with all key bindings
+
+## Language Detection and Syntax Highlighting
+
+The editor features comprehensive language detection and syntax highlighting capabilities. It's important to distinguish between language detection and syntax highlighting:
+
+### Language Detection
+
+The editor detects programming languages for 18+ file types based on file extension or shebang line:
+
+- **Go** (.go)
+- **Python** (.py, shebang detection)
+- **JavaScript** (.js)
+- **TypeScript** (.ts)
+- **Rust** (.rs)
+- **C** (.c, .h)
+- **C++** (.cpp, .cc, .cxx, .hpp)
+- **Java** (.java)
+- **Ruby** (.rb, shebang detection)
+- **PHP** (.php, shebang detection)
+- **Shell Scripts** (.sh, .bash, .zsh, shebang detection)
+- **Nim** (.nim)
+- **Zig** (.zig)
+- **D** (.d)
+- **HTML** (.html, .htm)
+- **CSS** (.css)
+- **JSON** (.json)
+- **XML** (.xml)
+- **Markdown** (.md)
+- **Plain Text** (.txt)
+
+### Syntax Highlighting
+
+**Full syntax highlighting is currently available for the following 8 languages:**
+
+- **Go** - Complete keyword, type, string, number, comment, and function highlighting
+- **Python** - Full syntax support including triple-quoted strings
+- **JavaScript** - Comprehensive highlighting for modern JS features
+- **Ruby** - Complete Ruby syntax with special comment blocks
+- **C** - Traditional C language support
+- **C++** - Extended C++ with modern keywords and types
+- **Java** - Full Java language support
+
+**Other detected languages** will display in plain text mode with basic language detection.
+
+
+### Highlighted Elements
+
+For languages with full syntax highlighting support, the editor provides:
+- **Keywords**: Language-specific reserved words
+- **Types**: Built-in and common type names
+- **Strings**: Quoted text content with escape sequence handling
+- **Numbers**: Numeric literals including decimals
+- **Comments**: Single-line and multi-line comments
+- **Functions**: Function calls and definitions
+- **Whitespace**: Visual indicators for spaces and tabs
+
+### Language Detection
+
+The editor uses multiple methods to detect the programming language:
+1. **File Extension**: Primary method based on file extension
+2. **Shebang Line**: For script files, detects language from the first line (e.g., `#!/usr/bin/env python3`)
+3. **Fallback**: Uses "Plain" mode for unknown file types
 
 ## Status Bar Information
 
@@ -184,6 +249,7 @@ The status bar at the bottom of the editor provides important information:
 
 ### Right Side
 - Cursor Position: Shows current line and column numbers
+- **Language**: Shows detected programming language (e.g., "Go", "Python")
 - Tab Size: Shows current tab size setting
 
 ## Theme Selector
@@ -191,7 +257,7 @@ The status bar at the bottom of the editor provides important information:
 The editor includes a built-in Theme Selector that lets you change the editor's color theme at runtime.
 
 How to open
-- Press `t` in the editor to open the theme selector popover.
+- Press `t` in the editor to open the theme selector popover (not a simple toggle).
 
 Navigation and controls
 - Use `↑` / `↓` to move the selection.
@@ -216,6 +282,10 @@ Available themes
 Developer notes
 - The selector UI and input handling are implemented in `editor/browser_ui.go` (`showThemeSelector` and `processThemeSelectorEvent`).
 - Theme application and persistence are in `editor/theme.go` (`SetTheme`, `SetThemeAndSave`, `ApplySettingsTheme`).
+
+## File Browser Auto-Save
+
+When using the file browser to open a new file, the editor automatically saves the current file if it has been modified. This prevents accidental loss of unsaved changes when navigating between files.
 
 ## Contributing
 
